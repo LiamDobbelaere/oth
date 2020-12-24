@@ -120,6 +120,9 @@ db.isReady().then(async () => {
     await rootUser.createPermission({
       name: 'MANAGE_PERMISSIONS'
     });
+    await rootUser.createPermission({
+      name: 'MODIFY_STREAMLIST'
+    });
 
     console.log('Root user and permissions seeded.');
   }  
