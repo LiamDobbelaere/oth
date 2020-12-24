@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <form id="login">
+    <input type="email" name="email" id="email" placeholder="john.doe@mail.com"/>
+    <input type="password" name="password" id="password" />
+    <input type="submit" id="submit" value="Log in" />
+  </form>
+
+  <script>
+    const form = document.getElementById("login");
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      fetch("login", {
+        method: "POST",
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          email,
+          password
+        })
+      }).then((res) => {
+        if (res.ok) {
+          console.log(res);
+          console.log('ok');
+        } else {
+          console.log(res.statusText);
+        }
+      }).catch(console.error);
+    });
+  </script>
+</body>
+</html>

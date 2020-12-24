@@ -21,6 +21,7 @@ const path = require('path');
 const session = require('express-session');
 const SQLiteSession = require('connect-sqlite3')(session);
 const sessionStore = new SQLiteSession();
+const cookieMaxAge = 7 * 24 * 60 * 60 * 1000;
 
 app.use(session({
   store: sessionStore,
@@ -29,7 +30,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: { 
     secure: !!+SECURE_COOKIES,
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 1 week
+    maxAge: cookieMaxAge
   }
 }));
 app.use(bodyParser.json());
@@ -55,6 +56,9 @@ app.post('/login', async (req, res) => {
   const passwordMatches = await bcrypt.compare(password, user.password);
   if (passwordMatches === true) {
     req.session.userId = user.id;
+    res.cookie('sid', req.sessionID, {
+      maxAge: cookieMaxAge
+    });
 
     return res.sendStatus(200);
   } else {
@@ -76,7 +80,9 @@ app.get('/permissions', async (req, res) => {
 });
 
 internal.get('/permissions/:sessionId', async (req, res) => {
-  sessionStore.get(req.params.sessionId, async (err, data) => {
+  const sessionId = req.params.sessionId;
+
+  sessionStore.get(sessionId, async (err, data) => {
     if (err) {
       res.sendStatus(500);
       throw err;
