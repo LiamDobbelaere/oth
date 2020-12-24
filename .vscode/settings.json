@@ -1,0 +1,12 @@
+{
+    "editor.tabSize": 2,
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "database": "${workspaceFolder:oth}/oth.db",
+            "name": "oth"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
+}
