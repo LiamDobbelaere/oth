@@ -6,7 +6,13 @@ const {
   ROOT_PASS,
   SESSION_SECRET,
   BCRYPT_ROUNDS,
-  SECURE_COOKIES
+  SECURE_COOKIES,
+  MAIL_SMTP_HOST,
+  MAIL_SMTP_PORT,
+  MAIL_SMTP_SECURE,
+  MAIL_SMTP_USER,
+  MAIL_SMTP_PASS,
+  MAIL_SMTP_FROM
 } = process.env;
 
 const express = require('express');
@@ -20,8 +26,19 @@ const db = require('./db');
 const path = require('path');
 const session = require('express-session');
 const SQLiteSession = require('connect-sqlite3')(session);
+const nodemailer = require("nodemailer");
 const sessionStore = new SQLiteSession();
-const cookieMaxAge = 7 * 24 * 60 * 60 * 1000;
+const cookieMaxAge = 365 * 24 * 60 * 60 * 1000;
+const mailTransporter = nodemailer.createTransport({
+  host: MAIL_SMTP_HOST,
+  port: +MAIL_SMTP_PORT,
+  secure: !!+MAIL_SMTP_SECURE,
+  auth: {
+    user: MAIL_SMTP_USER,
+    pass: MAIL_SMTP_PASS
+  }
+});
+
 
 app.use(session({
   store: sessionStore,
@@ -65,6 +82,42 @@ app.post('/login', async (req, res) => {
     return res.sendStatus(401);
   }
 });
+
+app.post('/register', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.sendStatus(400);
+  }
+
+  const user = await db.User.findOne({
+    where: {
+      email
+    }
+  });
+
+  if (user) {
+    return res.sendStatus(409);
+  }
+
+  // user doesn't exist, let's create it
+  const hashedPw = await bcrypt.hash(password, +BCRYPT_ROUNDS);
+  const newUser = await db.User.create({
+    email,
+    password: hashedPw
+  });
+
+  return res.sendStatus(200);
+});
+
+/*
+transporter.sendMail({
+  from: MAIL_SMTP_FROM,
+  to: "blah@outlook.com",
+  subject: "Hello ✔",
+  html: "<b>Hello world?</b>",
+});
+*/
 
 app.get('/permissions', async (req, res) => {
   if (!req.session.userId) {
