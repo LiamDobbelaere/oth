@@ -1,0 +1,186 @@
+html, body {
+  display: flex;
+  flex-direction: column;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --app-bg: #282a31;
+  --app-text: #fafafa;
+  --app-accent: #0091ff;
+  --app-section-bg: #0091ff44;
+  --app-subsection-bg: #91919144;
+  --app-input-bg: #fafafaaa;
+  --app-list-item-bg: #fafafa33;
+  --app-focused-input-bg: #fafafaee;
+  --app-danger: #ff0800aa;
+  --app-placeholder: #242424cc;
+  --border-radius: 8px;
+  background-color: var(--app-bg);
+  color: var(--app-text);
+  padding: 24px;
+}
+
+#app {
+  max-width: 700px;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.stylized {
+  color: var(--app-accent);
+}
+
+section {
+  border: 2px solid var(--app-section-bg);
+  background-color: var(--app-section-bg);
+  padding: 8px;
+  border-radius: var(--border-radius);
+  margin-bottom: 16px;
+}
+
+section.subsection {
+  border: 2px solid var(--app-subsection-bg);
+  background-color: var(--app-subsection-bg);
+}
+
+.error {
+  padding: 8px;
+  border: 2px solid var(--app-danger);
+  margin-bottom: 8px;
+  background-color: var(--app-danger);
+  border-radius: var(--border-radius);
+}
+
+h1, h2, h3 {
+  text-shadow: 2px 2px 4px rgba(20, 20, 20, 0.7);
+  margin: 0 0 16px 0;
+}
+
+input[type="text"], input[type="email"], input[type="password"] {
+  display: block;
+  margin-bottom: 24px;
+  width: 256px;
+  border-radius: var(--border-radius);
+  background-color: var(--app-input-bg);
+  border: 2px solid var(--app-input-bg);
+  height: 24px;
+  padding: 8px;
+  outline: none;
+  transition: background-color 0.4s ease, border 0.4s ease;
+}
+
+input:focus {
+  background-color: var(--app-focused-input-bg);
+  border: 2px solid var(--app-focused-input-bg);
+}
+
+input[type="submit"], button {
+  outline: none;
+  border-radius: var(--border-radius);
+  background-color: var(--app-input-bg);
+  border: 2px solid var(--app-input-bg);
+  padding: 8px;
+  transition: background-color 0.4s ease, border 0.4s ease;
+}
+
+input[type="submit"]:hover, button:hover {
+  background-color: var(--app-focused-input-bg);
+  border: 2px solid var(--app-focused-input-bg);
+}
+
+.slide-from-right {
+  animation: slide-from-right 0.4s ease;
+}
+@keyframes slide-from-right {
+  0% {
+      opacity: 0;
+      transform: translateX(16px);
+  }
+  100% {
+      opacity: 1;
+      transform: translateX(0);
+  }
+}
+
+.slide-from-left {
+  animation: slide-from-left 0.4s ease;
+}
+@keyframes slide-from-left {
+  0% {
+      opacity: 0;
+      transform: translateX(-16px);
+  }
+  100% {
+      opacity: 1;
+      transform: translateX(0);
+  }
+}
+
+.slide-from-top {
+  animation: slide-from-top 0.4s ease;
+}
+@keyframes slide-from-top {
+  0% {
+      opacity: 0;
+      transform: translateY(-50px);
+  }
+  100% {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+.appear {
+  animation: appear 0.4s ease;
+}
+@keyframes appear {
+  0% {
+      opacity: 0;
+  }
+  100% {
+      opacity: 1;
+  }
+}
+
+::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+  color: var(--app-placeholder);
+  opacity: 1; /* Firefox */
+}
+
+:-ms-input-placeholder { /* Internet Explorer 10-11 */
+  color: var(--app-placeholder);
+}
+
+::-ms-input-placeholder { /* Microsoft Edge */
+  color: var(--app-placeholder);
+}
+
+ul {
+  list-style-type: none;
+  margin: 0 0 8px 0;
+  padding: 0;
+}
+
+li {
+  background-color: var(--app-list-item-bg);
+  border: 1px solid var(--app-list-item-bg);
+  margin-bottom: 4px;
+  width: auto;
+  padding: 2px;
+}
+
+ul.inline li {
+  display: inline-block;
+  margin-right: 4px;
+}
+
+.delete-button {
+  margin: 0 4px 0 4px;
+  color: var(--app-text);
+  display: inline-block;
+  padding: 4px;
+  background-color: var(--app-danger);
+  text-decoration: none;
+}

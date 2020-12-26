@@ -3,42 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" type="text/css" href="css/normalize.css"/>
+  <link rel="stylesheet" type="text/css" href="css/screen.css"/>
   <title>Oth</title>
 </head>
 <body>
   <div id="app">
+    <h1 class="slide-from-top"><span class="stylized">O</span>th</h1>
+    <div v-if="error" class="error">{{ error }}</div>
     <div v-if="!loggedIn">
-        <span>{{ error }}</span>
-        <form id="login" action="" @submit="login">
-          <input v-model="loginEmail" type="email" name="loginEmail" id="loginEmail" placeholder="john.doe@mail.com" required/>
-          <input v-model="loginPassword" type="password" name="loginPassword" id="loginPassword" required />
-          <input type="submit" id="submit" value="Log in" />        
-        </form>
+        <section class="appear">
+          <h2><span class="stylized">L</span>og in</h2>
+          <form id="login" action="" @submit="login">
+            <input class="slide-from-right" v-model="loginEmail" type="email" name="loginEmail" id="loginEmail" placeholder="john.doe@mail.com" required/>
+            <input class="slide-from-left" v-model="loginPassword" type="password" name="loginPassword" id="loginPassword" placeholder="Password" required />
+            <input type="submit" id="submit" value="Log in" />        
+          </form>
+        </section>
 
-        <form id="register" action="" @submit="register">
-          <input v-model="registerEmail" type="email" name="registerEmail" id="registerEmail" placeholder="john.doe@mail.com"/>
-          <input v-model="registerPassword" type="password" name="registerPassword" id="registerPassword" />
-          <input v-model="registerPasswordConfirmation" type="password" name="registerPasswordConfirmation" id="registerPasswordConfirmation" />
-          <input type="submit" id="submitRegister" value="Register" />
-        </form>
+        <section class="appear">
+          <h2><span class="stylized">R</span>egister</h2>
+          <form id="register" action="" @submit="register">
+            <input class="slide-from-right" v-model="registerEmail" type="email" name="registerEmail" id="registerEmail" placeholder="john.doe@mail.com"/>
+            <input class="slide-from-left" v-model="registerPassword" type="password" name="registerPassword" id="registerPassword" placeholder="Password" />
+            <input class="slide-from-right" v-model="registerPasswordConfirmation" type="password" name="registerPasswordConfirmation" id="registerPasswordConfirmation" placeholder="Confirm password" />
+            <input type="submit" id="submitRegister" value="Register" />
+          </form>
+        </section>
       </div>
       <div v-if="loggedIn">
-        <span>{{ loggedInEmail }}</span>
-        <span v-for="permission in permissions">{{ permission }}</span>
-        <a href="#" @click="logout()">Log out</a>
-        <div v-if="canManagePermissions">
-          <span>Manage permissions</span>
-          <div v-for="(permissions, email) in usersWithPermissions">
-            <span>{{ email }}</span>
-            <span v-for="permission in permissions">
-              {{ permission }}
-              <a href="#" @click="removePermission(email, permission)">Revoke</a>
-            </span>
+        <section class="appear">
+          <h2><span class="stylized">{{ loggedInEmailFirstLetter }}</span>{{ loggedInEmailRest }}</h2>
+          <h3>Your permissions</h3>
+          <ul class="inline">
+            <li v-for="permission in permissions">{{ permission }}</li>
+          </ul>
+          <button @click="logout()">Log out</button>
+        </section>
+        <section class="appear" v-if="canManagePermissions">
+          <h2><span class="stylized">M</span>anage permissions</h2>
+          <section class="subsection slide-from-left" v-for="(permissions, email) in usersWithPermissions">
+            <h3>{{ email }}</h3>
+            <ul class="inline">
+              <li v-for="permission in permissions">{{ permission }}<a href="#" class="delete-button" @click="removePermission(email, permission)">X</a></li>
+            </ul>
+            <p>Add a new permission:</p>
             <input v-model="newPermission" type="text" name="newPermission" placeholder="SOME_PERMISSION" />
-            <a href="#" @click="addPermission(email)">Add permission</a>
+            <button @click="addPermission(email)">Add permission</a>
           </div>
         </div>
-      </div>
+      </section>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
   <script>
@@ -60,6 +74,12 @@
       computed: {
         canManagePermissions: function () {
           return this.permissions.includes("MANAGE_PERMISSIONS");
+        },
+        loggedInEmailFirstLetter: function() {
+          return this.loggedInEmail && this.loggedInEmail[0].toUpperCase();
+        },
+        loggedInEmailRest: function() {
+          return this.loggedInEmail && this.loggedInEmail.slice(1);
         }
       },
       mounted: function() {
@@ -148,8 +168,16 @@
               email,
               permission: this.newPermission
             })
-          }).then(() => {
-            this.reloadUsersAndPermissions();
+          }).then((res) => {
+            if (res.ok) {
+              this.reloadUsersAndPermissions();
+            } else {
+              return res.json();
+            }
+          }).then((resJson) => {
+            if (resJson) {
+              this.error = resJson.error;
+            }
           });
         },
         removePermission: function(email, permission) {
@@ -160,8 +188,16 @@
               email,
               permission
             })
-          }).then(() => {
-            this.reloadUsersAndPermissions();
+          }).then((res) => {
+            if (res.ok) {
+              this.reloadUsersAndPermissions();
+            } else {
+              return res.json();
+            }
+          }).then((resJson) => {
+            if (resJson) {
+              this.error = resJson.error;
+            }
           });
         },
         reloadUsersAndPermissions: function() {
@@ -176,7 +212,6 @@
         }
       }
     });
-
   </script>
 </body>
 </html>
