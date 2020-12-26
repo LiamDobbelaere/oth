@@ -286,7 +286,7 @@ transporter.sendMail({
 });
 */
 
-internal.get('/permissions/:sessionId', async (req, res) => {
+internal.get('/session/:sessionId/user-info', async (req, res) => {
   const sessionId = req.params.sessionId;
 
   sessionStore.get(sessionId, async (err, data) => {
@@ -305,11 +305,16 @@ internal.get('/permissions/:sessionId', async (req, res) => {
     });
 
     if (!user) {
-      res.send([]);
+      res.status(404).send({
+        error: "User not found from sid."
+      });
     } else {
       const permissions = user.Permissions.map(p => p.name);
     
-      res.send(permissions);
+      res.send({
+        email: user.email,
+        permissions
+      });
     }
   });
 });
