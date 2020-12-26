@@ -3,39 +3,180 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <title>Oth</title>
 </head>
 <body>
-  <form id="login">
-    <input type="email" name="email" id="email" placeholder="john.doe@mail.com"/>
-    <input type="password" name="password" id="password" />
-    <input type="submit" id="submit" value="Log in" />
-  </form>
+  <div id="app">
+    <div v-if="!loggedIn">
+        <span>{{ error }}</span>
+        <form id="login" action="" @submit="login">
+          <input v-model="loginEmail" type="email" name="loginEmail" id="loginEmail" placeholder="john.doe@mail.com" required/>
+          <input v-model="loginPassword" type="password" name="loginPassword" id="loginPassword" required />
+          <input type="submit" id="submit" value="Log in" />        
+        </form>
 
+        <form id="register" action="" @submit="register">
+          <input v-model="registerEmail" type="email" name="registerEmail" id="registerEmail" placeholder="john.doe@mail.com"/>
+          <input v-model="registerPassword" type="password" name="registerPassword" id="registerPassword" />
+          <input v-model="registerPasswordConfirmation" type="password" name="registerPasswordConfirmation" id="registerPasswordConfirmation" />
+          <input type="submit" id="submitRegister" value="Register" />
+        </form>
+      </div>
+      <div v-if="loggedIn">
+        <span>{{ loggedInEmail }}</span>
+        <span v-for="permission in permissions">{{ permission }}</span>
+        <a href="#" @click="logout()">Log out</a>
+        <div v-if="canManagePermissions">
+          <span>Manage permissions</span>
+          <div v-for="(permissions, email) in usersWithPermissions">
+            <span>{{ email }}</span>
+            <span v-for="permission in permissions">
+              {{ permission }}
+              <a href="#" @click="removePermission(email, permission)">Revoke</a>
+            </span>
+            <input v-model="newPermission" type="text" name="newPermission" placeholder="SOME_PERMISSION" />
+            <a href="#" @click="addPermission(email)">Add permission</a>
+          </div>
+        </div>
+      </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
   <script>
-    const form = document.getElementById("login");
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-
-      fetch("login", {
-        method: "POST",
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          email,
-          password
-        })
-      }).then((res) => {
-        if (res.ok) {
-          console.log(res);
-          console.log('ok');
-        } else {
-          console.log(res.statusText);
+    const app = new Vue({
+      el: "#app",
+      data: {
+        loggedIn: false,
+        loggedInEmail: "",
+        loginEmail: "",
+        loginPassword: "",
+        registerEmail: "",
+        registerPassword: "",
+        registerPasswordConfirmation: "",
+        newPermission: "",
+        permissions: [],
+        usersWithPermissions: {},
+        error: ""
+      },
+      computed: {
+        canManagePermissions: function () {
+          return this.permissions.includes("MANAGE_PERMISSIONS");
         }
-      }).catch(console.error);
+      },
+      mounted: function() {
+        fetch("logged-in")
+        .then((res) => {
+          if (res.ok) {
+            this.loggedIn = res.status === 200;
+            return res.json();
+          } else {
+            this.error = "Please log in first.";
+          }
+        }).then((resJson) => {
+          if (resJson) {
+            this.loggedInEmail = resJson.email;
+            this.permissions = resJson.permissions;
+
+            if (this.canManagePermissions) {
+              this.reloadUsersAndPermissions();
+            }
+          }
+        });
+      },
+      methods: {
+        login: function(e) {
+          e.preventDefault();
+
+          fetch("login", {
+            method: "POST",
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              email: this.loginEmail,
+              password: this.loginPassword
+            })
+          })
+          .then((res) => {
+            if (res.ok) {
+              location.reload();
+            } else {
+              return res.json();
+            }
+          }).then((resJson) => {
+            if (resJson) {
+              this.error = resJson.error;
+            }
+          }).catch(console.error);
+        },
+        register: function(e) {
+          e.preventDefault();
+
+          if (this.registerPassword !== this.registerPasswordConfirmation) {
+            this.error = "Passwords don't match."
+            return;
+          }
+
+          fetch("register", {
+            method: "POST",
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              email: this.registerEmail,
+              password: this.registerPassword
+            })
+          })
+          .then((res) => {
+            if (res.ok) {
+              location.reload();
+            } else {
+              return res.json();
+            }
+          }).then((resJson) => {
+            this.error = resJson.error;
+          }).catch(console.error);
+        },
+        logout: function() {
+          fetch("logout", {
+            method: "POST"
+          })
+          .then(() => {
+            this.loggedIn = false;
+          });
+        },
+        addPermission: function(email) {
+          fetch("manage-permissions/add", {
+            method: "POST",
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              email,
+              permission: this.newPermission
+            })
+          }).then(() => {
+            this.reloadUsersAndPermissions();
+          });
+        },
+        removePermission: function(email, permission) {
+          fetch("manage-permissions/remove", {
+            method: "POST",
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              email,
+              permission
+            })
+          }).then(() => {
+            this.reloadUsersAndPermissions();
+          });
+        },
+        reloadUsersAndPermissions: function() {
+          fetch("manage-permissions/users-and-permissions")
+            .then(res => {
+              if (res.ok) {
+                return res.json();
+              }
+            }).then((resJson) => {
+              this.usersWithPermissions = resJson;
+            });
+        }
+      }
     });
+
   </script>
 </body>
 </html>

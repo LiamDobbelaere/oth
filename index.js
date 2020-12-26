@@ -27,6 +27,7 @@ const path = require('path');
 const session = require('express-session');
 const SQLiteSession = require('connect-sqlite3')(session);
 const nodemailer = require("nodemailer");
+const { LOADIPHLPAPI } = require('dns');
 const sessionStore = new SQLiteSession();
 const cookieMaxAge = 365 * 24 * 60 * 60 * 1000;
 const mailTransporter = nodemailer.createTransport({
@@ -53,11 +54,99 @@ app.use(session({
 app.use(bodyParser.json());
 app.use('/', express.static(path.join(__dirname, 'public')));
 
-app.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+app.get('/logged-in', async (req, res) => {
+  if (req.session.userId) {
+    const user = await db.User.findByPk(req.session.userId, {
+      include: db.Permission
+    });
+    const permissions = user.Permissions.map(p => p.name);
 
-  if (!email || !password) {
-    return res.sendStatus(400);
+    if (!user) {
+      return res.sendStatus(404);
+    }
+
+    return res.send({
+      email: user.email,
+      permissions
+    });
+  } else {
+    return res.sendStatus(403);
+  }
+});
+
+app.post('/logout', (req, res) => {
+  delete req.session.userId;
+
+  return res.sendStatus(200);
+});
+
+function loginUser(userId, req, res) {
+  req.session.userId = userId;
+  res.cookie('sid', req.sessionID, {
+    maxAge: cookieMaxAge
+  });
+}
+
+async function hasPermission(name, userId) {
+  const user = await db.User.findByPk(userId, {
+    include: db.Permission
+  });
+  const permissions = user.Permissions.map(p => p.name);
+
+  return permissions.includes(name);
+}
+
+app.get('/manage-permissions/users-and-permissions', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(403).send({
+      error: "Not logged in."
+    });
+  }
+
+  const allowed = await hasPermission("MANAGE_PERMISSIONS", req.session.userId);
+  if (!allowed) {
+    return res.status(403).send({
+      error: "You don't have permissions to do that."
+    });
+  }
+
+  const usersWithPermissions = await db.User.findAll({
+    include: db.Permission
+  });
+
+  const result = usersWithPermissions.reduce((acc, userWithPermissions) => {
+    acc[userWithPermissions.email] = userWithPermissions.Permissions.map(p => p.name);
+    return acc;
+  }, {});
+
+  res.status(200).send(result);
+});
+
+app.post('/manage-permissions/add', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(403).send({
+      error: "Not logged in."
+    });
+  }
+
+  const { email, permission } = req.body;
+
+  if (!email || !permission) {
+    return res.status(400).send({
+      error: "Email or permission not provided."
+    });
+  }
+
+  const permissionInstance = await db.Permission.findOne({
+    where: {
+      name: permission
+    }
+  });
+
+  if (!permissionInstance) {
+    return res.status(404).send({
+      error: "Permission not found."
+    });
   }
 
   const user = await db.User.findOne({
@@ -67,19 +156,90 @@ app.post('/login', async (req, res) => {
   });
 
   if (!user) {
-    return res.sendStatus(401);
+    return res.status(404).send({
+      error: "User not found."
+    });
+  }
+
+  await user.addPermission(permissionInstance);
+
+  return res.sendStatus(200);
+});
+
+app.post('/manage-permissions/remove', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(403).send({
+      error: "Not logged in."
+    });
+  }
+
+  const { email, permission } = req.body;
+
+  if (!email || !permission) {
+    return res.status(400).send({
+      error: "Email or permission not provided."
+    });
+  }
+
+  const permissionInstance = await db.Permission.findOne({
+    where: {
+      name: permission
+    }
+  });
+
+  if (!permissionInstance) {
+    return res.status(404).send({
+      error: "Permission not found."
+    });
+  }
+
+  const user = await db.User.findOne({
+    where: {
+      email
+    }
+  });
+
+  if (!user) {
+    return res.status(404).send({
+      error: "User not found."
+    });
+  }
+
+  await user.removePermission(permissionInstance);
+
+  return res.sendStatus(200);
+});
+
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).send({
+      error: "Email or password not provided."
+    });
+  }
+
+  const user = await db.User.findOne({
+    where: {
+      email
+    }
+  });
+
+  if (!user) {
+    return res.status(401).send({
+      error: "User does not exist."
+    });
   }
 
   const passwordMatches = await bcrypt.compare(password, user.password);
   if (passwordMatches === true) {
-    req.session.userId = user.id;
-    res.cookie('sid', req.sessionID, {
-      maxAge: cookieMaxAge
-    });
+    loginUser(user.id, req, res);
 
     return res.sendStatus(200);
   } else {
-    return res.sendStatus(401);
+    return res.status(401).send({
+      error: "Wrong credentials."
+    });
   }
 });
 
@@ -87,7 +247,9 @@ app.post('/register', async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.sendStatus(400);
+    return res.status(400).send({
+      error: "Email or password not provided."
+    });
   }
 
   const user = await db.User.findOne({
@@ -97,7 +259,9 @@ app.post('/register', async (req, res) => {
   });
 
   if (user) {
-    return res.sendStatus(409);
+    return res.status(409).send({
+      error: "A user with that e-mail already exists."
+    });
   }
 
   // user doesn't exist, let's create it
@@ -106,6 +270,9 @@ app.post('/register', async (req, res) => {
     email,
     password: hashedPw
   });
+
+  // log them in while we're at it
+  loginUser(newUser.id, req, res);
 
   return res.sendStatus(200);
 });
@@ -118,19 +285,6 @@ transporter.sendMail({
   html: "<b>Hello world?</b>",
 });
 */
-
-app.get('/permissions', async (req, res) => {
-  if (!req.session.userId) {
-    return res.sendStatus(403);
-  }
-
-  const user = await db.User.findByPk(req.session.userId, {
-    include: db.Permission
-  });
-  const permissions = user.Permissions.map(p => p.name);
-
-  res.send(permissions);
-});
 
 internal.get('/permissions/:sessionId', async (req, res) => {
   const sessionId = req.params.sessionId;
