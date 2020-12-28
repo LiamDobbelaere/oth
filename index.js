@@ -12,7 +12,10 @@ const {
   MAIL_SMTP_SECURE,
   MAIL_SMTP_USER,
   MAIL_SMTP_PASS,
-  MAIL_SMTP_FROM
+  MAIL_SMTP_FROM,
+  MYSQL_DATABASE,
+  MYSQL_USER,
+  MYSQL_PASS
 } = process.env;
 
 const express = require('express');
@@ -25,10 +28,23 @@ const bcrypt = require('bcrypt');
 const db = require('./db');
 const path = require('path');
 const session = require('express-session');
-const SQLiteSession = require('connect-sqlite3')(session);
+
+let sessionStore;
+if (MYSQL_DATABASE) {
+  console.log('(session database connection = sequelize)');
+  const SequelizeStore = require("connect-session-sequelize")(session.Store);
+
+  sessionStore = new SequelizeStore({
+    db: db.sequelize
+  });
+} else {
+  console.log('(session database connection = sqlite3)');
+
+  const SQLiteSession = require('connect-sqlite3')(session);
+  sessionStore = new SQLiteSession();
+}
+
 const nodemailer = require("nodemailer");
-const { LOADIPHLPAPI } = require('dns');
-const sessionStore = new SQLiteSession();
 const cookieMaxAge = 365 * 24 * 60 * 60 * 1000;
 const mailTransporter = nodemailer.createTransport({
   host: MAIL_SMTP_HOST,

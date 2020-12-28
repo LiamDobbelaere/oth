@@ -52,5 +52,6 @@ function isReady() {
 module.exports = {
   User,
   Permission,
-  isReady
+  isReady,
+  sequelize
 };
