@@ -1,9 +1,26 @@
+const { 
+  MYSQL_DATABASE,
+  MYSQL_USER,
+  MYSQL_PASS
+} = process.env;
+
 const Sequelize = require('sequelize');
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: 'oth.db',
-  logging: false
-});
+let sequelize;
+
+if (MYSQL_DATABASE) {
+  console.log('(database connection = mysql)');
+  sequelize = new Sequelize(MYSQL_DATABASE, MYSQL_USER, MYSQL_PASS, {
+    dialect: 'mysql',
+    logging: false
+  });
+} else {
+  console.log('(database connection = sqlite)');
+  sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage: 'oth.db',
+    logging: false
+  });
+}
 
 const User = sequelize.define('User', {
   email: {
