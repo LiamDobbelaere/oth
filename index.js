@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { 
+const {
   PORT,
   PORT_INTERNAL,
   ROOT_EMAIL,
@@ -62,7 +62,7 @@ app.use(session({
   secret: SESSION_SECRET,
   resave: true,
   saveUninitialized: false,
-  cookie: { 
+  cookie: {
     secure: !!+SECURE_COOKIES,
     maxAge: cookieMaxAge
   }
@@ -326,8 +326,9 @@ internal.get('/session/:sessionId/user-info', async (req, res) => {
       });
     } else {
       const permissions = user.Permissions.map(p => p.name);
-    
+
       res.send({
+        id: user.id,
         email: user.email,
         permissions
       });
@@ -353,7 +354,7 @@ db.isReady().then(async () => {
     });
 
     console.log('Root user and permissions seeded.');
-  }  
+  }
 
   http.listen(PORT, () => {
     console.log(`Oth running on port ${PORT}`);
